@@ -1,0 +1,33 @@
+# Copy to config.toml and edit. Secrets do NOT go here; they go in .env.
+
+[access]
+# Discord user IDs allowed to trigger the bot (Discord: Settings > Advanced > Developer Mode,
+# then right-click your name > Copy User ID). Everyone else is ignored.
+allowed_user_ids = [123456789012345678]
+
+# Subset allowed to ask Claude Code for a PR (posts an @claude comment on the issue).
+# Leave empty to disable the PR step entirely.
+pr_user_ids = [123456789012345678]
+
+[bot]
+model = "claude-haiku-5-5"
+# Labels added to every issue the bot files. Leave empty if you don't use labels.
+default_labels = []          # e.g. ["from-discord"]
+context_messages = 15        # recent channel messages given to the agent
+max_agent_turns = 12         # safety cap on tool-use steps per request
+session_ttl_hours = 24       # how long a triage thread accepts untagged follow-ups
+dry_run = false              # true = search and draft, but never write to GitHub
+# Anything else the agent should know, e.g. house style for titles.
+extra_instructions = """
+"""
+
+# One section per repo the bot may file into. The key (liwords, macondo, ...) is how the
+# agent names it; the description is how it decides where a report belongs.
+# These are examples: check the owner/repo names before using.
+[repos.liwords]
+github = "woogles-io/liwords"
+description = "The Woogles.io website: web UI, lobby, gameplay, tournaments, accounts, chat."
+
+[repos.macondo]
+github = "domino14/macondo"
+description = "Macondo, the crossword board game engine and bot used for analysis and computer opponents."

@@ -1,0 +1,8 @@
+# Secrets and local config
+.env
+config.toml
+
+# Python
+.venv/
+__pycache__/
+*.pyc

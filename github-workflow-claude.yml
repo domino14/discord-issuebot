@@ -1,0 +1,32 @@
+# Optional PR step. Put this at .github/workflows/claude.yml in each repo where you want
+# "@claude" comments to produce PRs. Easiest setup: run /install-github-app in Claude Code,
+# which installs the Claude GitHub app and adds the token secret for you.
+#
+# The bot comments as the owner of GITHUB_TOKEN (your account), so gating on your
+# GitHub username below means only you (or the bot acting for you) can start a run.
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    if: >
+      contains(github.event.comment.body, '@claude') &&
+      github.event.comment.user.login == 'YOUR_GITHUB_USERNAME'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: anthropics/claude-code-action@v1
+        with:
+          # Pick ONE: your subscription token (from `claude setup-token`) or an API key.
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}

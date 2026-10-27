@@ -1,0 +1,18 @@
+# Optional: run without Docker. Edit User and paths, then:
+#   sudo cp issuebot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now issuebot
+[Unit]
+Description=Woogles Discord issue bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/issuebot
+EnvironmentFile=/home/pi/issuebot/.env
+ExecStart=/home/pi/issuebot/.venv/bin/python issuebot.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
