@@ -37,8 +37,10 @@ class Session:
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
-def strip_mentions(text: str, bot_id: int) -> str:
-    return re.sub(rf"<@!?{bot_id}>", "", text).strip()
+def strip_mentions(text: str, *ids: int) -> str:
+    """Remove mentions of the bot's user (<@id>) or its role (<@&id>)."""
+    alts = "|".join(str(i) for i in ids)
+    return re.sub(rf"<@[!&]?(?:{alts})>", "", text).strip()
 
 
 def describe(m: discord.Message) -> str:
@@ -90,17 +92,33 @@ class IssueBot(discord.Client):
         for k in [k for k, s in self.sessions.items() if s.updated < cutoff]:
             del self.sessions[k]
 
+    def _self_role_id(self, message: discord.Message) -> int | None:
+        role = message.guild.self_role if message.guild else None
+        return role.id if role else None
+
+    def _mentions_me(self, message: discord.Message) -> bool:
+        # Discord autocompletes both the bot and its same-named managed role; accept either.
+        role_id = self._self_role_id(message)
+        return self.user in message.mentions or any(r.id == role_id for r in message.role_mentions)
+
+    def _strip(self, message: discord.Message) -> str:
+        ids = [self.user.id] + [i for i in [self._self_role_id(message)] if i]
+        return strip_mentions(message.content, *ids)
+
     async def on_message(self, message: discord.Message):
         if message.author.bot or self.user is None:
             return
         if message.author.id not in self.cfg.allowed_user_ids:
+            if self._mentions_me(message):
+                log.info("Ignored mention from %s (%s) in #%s: not in allowed_user_ids",
+                         message.author, message.author.id, message.channel)
             return
         self._expire_sessions()
 
         session = self.sessions.get(message.channel.id)
         if session is not None:
             await self._continue(message, session)
-        elif self.user in message.mentions:
+        elif self._mentions_me(message):
             await self._start(message)
 
     async def _linked_message(
@@ -129,7 +147,7 @@ class IssueBot(discord.Client):
     async def _gather_context(self, message: discord.Message) -> tuple[str, str]:
         """Returns (context for the agent, text of the reported message for the thread name)."""
         reported: list[discord.Message] = []
-        instruction = strip_mentions(message.content, self.user.id) or "(no extra instructions)"
+        instruction = self._strip(message) or "(no extra instructions)"
         sections = [f"Maintainer's request:\n{instruction}"]
 
         ref = message.reference
@@ -175,7 +193,7 @@ class IssueBot(discord.Client):
             return message.channel
         try:
             return await message.create_thread(
-                name=thread_name(name_hint or strip_mentions(message.content, self.user.id)),
+                name=thread_name(name_hint or self._strip(message)),
                 auto_archive_duration=1440,
             )
         except (discord.HTTPException, ValueError) as e:
@@ -200,7 +218,7 @@ class IssueBot(discord.Client):
         await self._react(message, "✅" if ok else "⚠️")
 
     async def _continue(self, message: discord.Message, session: Session):
-        followup = strip_mentions(message.content, self.user.id)
+        followup = self._strip(message)
         if not followup:
             return
         async with session.lock:
