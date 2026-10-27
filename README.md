@@ -48,7 +48,7 @@ Use 64-bit Raspberry Pi OS (Pi 3/4/5). Docker is easiest:
 
 ```bash
 curl -fsSL https://get.docker.com | sh && sudo usermod -aG docker $USER   # once, then log out/in
-cd woogles-issuebot
+git clone https://github.com/domino14/discord-issuebot && cd discord-issuebot
 docker compose up -d --build
 docker compose logs -f               # should say "Logged in as IssueBot#1234"
 ```
@@ -99,3 +99,7 @@ The bot's comment is posted with your GitHub token, so it triggers the workflow 
 | `agent.py` | System prompt, GitHub tools, Tool Runner loop |
 | `github_api.py` | Small async GitHub REST client |
 | `config.py` | Loads `config.toml` + `.env` |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
